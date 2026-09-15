@@ -1,0 +1,171 @@
+==========================================
+JOB SEARCH SAAS - SETUP INSTRUCTIONS
+==========================================
+
+STEP 1: INSTALL DEPENDENCIES
+----------------------------
+cd job-search-saas
+npm install
+
+
+STEP 2: CONFIGURE ENVIRONMENT
+----------------------------
+Edit .env.local or .env with your credentials:
+
+Required:
+- NEXT_PUBLIC_SUPABASE_URL
+- NEXT_PUBLIC_SUPABASE_ANON_KEY
+- SUPABASE_SERVICE_ROLE_KEY
+- APIFY_TOKEN
+- LINKEDIN_ACTOR_ID
+- NAUKRI_ACTOR_ID
+- JWT_SECRET
+
+
+STEP 3: SETUP SUPABASE DATABASE
+----------------------------
+Run the SQL in supabase-schema.sql in your Supabase SQL Editor
+
+
+STEP 4: RUN APPLICATION
+----------------------------
+npm run dev
+
+Access at: http://localhost:3000
+
+
+==========================================
+KEY CONFIGURATION VALUES (in .env)
+==========================================
+
+CREDITS_PER_SEARCH=5
+- Credits deducted per search (manual or automatic)
+
+RUPEES_PER_CREDIT=2
+- Display value: 5 credits = ₹10 per search
+
+DEFAULT_CREDITS=100
+- Starting credits for new users
+
+DEFAULT_LINKEDIN_COUNT=15
+DEFAULT_NAUKRI_COUNT=15
+- Default results per source (total 30)
+
+SCAN_TIMES=08:00,12:00,16:00,20:00
+- Fixed times when automatic scans run daily
+- Times are in 24-hour format (HH:MM)
+- Currently: 8am, 12pm, 4pm, 8pm
+
+BCRYPT_ROUNDS=10
+- Password hashing security level
+
+
+==========================================
+FEATURES
+==========================================
+
+1. Email/Password Authentication
+   - Secure bcrypt hashing
+   - JWT tokens (7 day expiry)
+
+2. On-Demand Job Search
+   - Keyword-based search
+   - LinkedIn + Naukri scraping via Apify
+   - Configurable result counts
+
+3. Credit System
+   - Shows remaining credits
+   - Displays cost per search
+   - Automatic deduction
+
+4. Job Display
+   - Clean card-based UI
+   - LinkedIn: Apply link, post link, poster profile
+   - Naukri: Direct application link
+
+5. Automatic Scans
+   - Runs at: 8am, 12pm, 4pm, 8pm
+   - Uses saved keywords
+   - Deducts credits automatically
+
+6. Configuration Page
+   - Save keywords for auto-scans
+   - View current settings
+   - See scan schedule
+
+7. Next Scan Notification
+   - Popup on login
+   - Shows next scheduled scan time
+   - Shows all daily scan times
+
+
+==========================================
+API ENDPOINTS
+==========================================
+
+POST /api/auth/register - Create account
+POST /api/auth/login - Login
+GET  /api/user - Get user info (requires auth)
+POST /api/search - Search jobs (requires auth)
+POST /api/config - Update settings (requires auth)
+GET  /api/init-scheduler - Initialize cron scheduler
+
+
+==========================================
+TROUBLESHOOTING
+==========================================
+
+Scheduler not running:
+- Login to dashboard (auto-initializes scheduler)
+- Or manually call: GET /api/init-scheduler
+
+Build errors:
+- Make sure .env values are filled in
+- Check Supabase URL format
+
+Search fails:
+- Verify Apify token and actor IDs
+- Check Apify dashboard for actor status
+
+Login issues:
+- Clear localStorage
+- Verify JWT_SECRET is set
+- Check Supabase credentials
+
+
+==========================================
+DEPLOYMENT NOTES
+==========================================
+
+1. Fill all environment variables
+2. Use strong JWT_SECRET
+3. Run database schema in Supabase
+4. Test locally first
+5. Deploy to your preferred platform
+6. Set environment variables in hosting
+7. Test with a few users before launch
+
+
+==========================================
+WHAT'S CONFIGURABLE VIA .ENV
+==========================================
+
+All system decisions are controlled via environment variables:
+
+✓ Credit amounts and pricing
+✓ Default search result counts  
+✓ Automatic scan times (8am, 12pm, 4pm, 8pm)
+✓ Password hashing strength
+✓ Apify configuration
+✓ Database configuration
+
+No hardcoded values in the application code!
+
+
+==========================================
+READY FOR LAUNCH
+==========================================
+
+Application is complete and ready for marketing in 2 days.
+All features implemented, no mocks, real integrations.
+Designed for 100 concurrent users initially.
