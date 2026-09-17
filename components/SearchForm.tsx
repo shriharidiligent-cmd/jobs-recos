@@ -14,8 +14,9 @@ interface SearchFormProps {
 }
 
 export default function SearchForm({ onSearch, loading }: SearchFormProps) {
-  const defaultLinkedin = parseInt(process.env.NEXT_PUBLIC_DEFAULT_LINKEDIN_COUNT || '15');
-  const defaultNaukri = parseInt(process.env.NEXT_PUBLIC_DEFAULT_NAUKRI_COUNT || '15');
+  const defaultLinkedin = Math.max(15, parseInt(process.env.NEXT_PUBLIC_DEFAULT_LINKEDIN_COUNT || '15'));
+  const defaultNaukri = Math.max(15, parseInt(process.env.NEXT_PUBLIC_DEFAULT_NAUKRI_COUNT || '15'));
+  const CREDITS_PER_JOB = parseFloat(process.env.NEXT_PUBLIC_CREDITS_PER_JOB || '0.0667');
   
   const [keywords, setKeywords] = useState('');
   const [linkedinCount, setLinkedinCount] = useState(defaultLinkedin);
@@ -51,7 +52,7 @@ export default function SearchForm({ onSearch, loading }: SearchFormProps) {
             value={keywords}
             onChange={(e) => setKeywords(e.target.value)}
             placeholder="e.g., React Developer, Cybersecurity, Data Analyst"
-            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full text-gray-800 px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             required
           />
         </div>
@@ -90,12 +91,12 @@ export default function SearchForm({ onSearch, loading }: SearchFormProps) {
             <input
               type="number"
               id="linkedin-count"
-              min="0"
+              min="15"
               max="50"
               value={linkedinCount}
-              onChange={(e) => setLinkedinCount(parseInt(e.target.value) || 0)}
+              onChange={(e) => setLinkedinCount(Math.max(15, parseInt(e.target.value) || 15))}
               disabled={!sources.includes('linkedin')}
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
+              className="w-full text-gray-800 px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
             />
           </div>
           <div>
@@ -105,12 +106,12 @@ export default function SearchForm({ onSearch, loading }: SearchFormProps) {
             <input
               type="number"
               id="naukri-count"
-              min="0"
+              min="15"
               max="50"
               value={naukriCount}
-              onChange={(e) => setNaukriCount(parseInt(e.target.value) || 0)}
+              onChange={(e) => setNaukriCount(Math.max(15, parseInt(e.target.value) || 15))}
               disabled={!sources.includes('naukri')}
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
+              className="w-full text-gray-800 px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
             />
           </div>
         </div>
@@ -123,7 +124,7 @@ export default function SearchForm({ onSearch, loading }: SearchFormProps) {
             id="date-posted"
             value={datePosted}
             onChange={(e) => setDatePosted(e.target.value)}
-            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full text-gray-800 px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           >
             <option value="">Any Time</option>
             <option value="24h">Past 24 Hours</option>
@@ -145,6 +146,21 @@ export default function SearchForm({ onSearch, loading }: SearchFormProps) {
             Please select at least one job source
           </p>
         )}
+
+        {/* Cost Information */}
+        <div className="bg-blue-50 p-3 rounded-md">
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-blue-800">
+              Requesting up to {linkedinCount + naukriCount} jobs
+            </span>
+            <span className="text-blue-600 font-medium">
+              Max cost: {((linkedinCount + naukriCount) * CREDITS_PER_JOB).toFixed(4)} credits
+            </span>
+          </div>
+          <p className="text-xs text-blue-700 mt-1">
+            💡 You only pay for jobs we actually find and deliver ({CREDITS_PER_JOB} credits per job)
+          </p>
+        </div>
       </div>
     </form>
   );

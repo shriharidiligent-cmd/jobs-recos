@@ -1,0 +1,110 @@
+JOB SEARCH SAAS - NEW CREDIT SYSTEM IMPLEMENTATION
+================================================
+
+## CHANGES MADE
+
+### 1. NEW CREDIT PRICING MODEL
+- **OLD**: 5 credits per search (regardless of results)
+- **NEW**: 0.0667 credits per job delivered
+- **BENEFIT**: Users only pay for actual jobs they receive
+
+### 2. CREDIT CALCULATION EXAMPLES
+- Search finds 30 jobs = 30 × 0.0667 = 2.001 credits
+- Search finds 15 jobs = 15 × 0.0667 = 1.0005 credits  
+- Search finds 0 jobs = 0 × 0.0667 = 0 credits (FREE!)
+
+### 3. CREDIT PURCHASE SYSTEM
+- Minimum purchase: 50 credits
+- No payment integration (demo mode)
+- Credit packages: 50, 100, 200 credits
+- Custom amount option (minimum 50)
+
+### 4. UPDATED COMPONENTS
+
+#### Search System (`app/api/search/route.ts`)
+- Scrapes jobs FIRST to count results
+- Calculates credits needed based on actual jobs found
+- Charges only for jobs delivered
+- Returns detailed cost breakdown
+
+#### Scheduler (`lib/scheduler.ts`)
+- Updated to use per-job pricing
+- Better credit validation before scanning
+- Detailed logging of credit usage
+
+#### User Interface Updates
+- **CreditDisplay**: Shows credits with job estimate
+- **SearchForm**: Shows max cost estimate + "pay per job" info
+- **Dashboard**: Added "Buy Credits" link
+- **New Page**: `/buy-credits` for purchasing credits
+
+### 5. API ENDPOINTS
+
+#### `/api/add-credits` (POST)
+- Add credits to user account
+- Minimum 50 credits validation
+- Mock transaction ID generation
+- Ready for payment gateway integration
+
+#### `/api/add-credits` (GET)  
+- Returns pricing information
+- Credit packages with job estimates
+- Cost calculator data
+
+### 6. ENVIRONMENT VARIABLES UPDATED
+```
+# Old variables (removed)
+CREDITS_PER_SEARCH=5
+RUPEES_PER_CREDIT=2
+
+# New variables
+CREDITS_PER_JOB=0.0667
+MIN_CREDIT_PURCHASE=50
+```
+
+### 7. USER EXPERIENCE IMPROVEMENTS
+- **Transparent Pricing**: Users see exactly what they'll pay
+- **No Risk Searches**: No credits charged if no jobs found
+- **Better Value**: Pay based on results, not attempts
+- **Credit Warnings**: Low credit alerts in UI
+- **Easy Top-up**: One-click credit purchase
+
+### 8. TECHNICAL BENEFITS
+- More accurate cost prediction
+- Better user retention (fair pricing)
+- Cleaner credit management
+- Scalable pricing model
+
+## REMOVED FEATURES (FOR LATER)
+- Push notifications (Firebase integration removed)
+- Device token management
+- Notification settings page
+- All notification-related APIs
+
+## FILES MODIFIED
+- `app/api/search/route.ts` - Per-job credit calculation
+- `lib/scheduler.ts` - Updated credit system
+- `components/CreditDisplay.tsx` - New UI with buy button
+- `components/SearchForm.tsx` - Cost preview
+- `app/dashboard/page.tsx` - Added buy credits link
+- `.env.local` - Updated environment variables
+- `supabase-schema.sql` - Cleaned up (removed device_tokens)
+
+## NEW FILES CREATED
+- `app/buy-credits/page.tsx` - Credit purchase interface
+- `app/api/add-credits/route.ts` - Credit addition API
+
+## NEXT STEPS FOR PRODUCTION
+1. Integrate payment gateway (Razorpay/Stripe)
+2. Add transaction logging table
+3. Implement credit expiry policies (optional)
+4. Add credit usage analytics
+5. Re-implement push notifications when needed
+
+## TESTING CHECKLIST
+- [ ] Search with different job counts charges correctly
+- [ ] Zero results = zero credits charged
+- [ ] Credit purchase flow works
+- [ ] Low credit warnings display
+- [ ] Automatic scans respect credit limits
+- [ ] Credit display shows accurate job estimates

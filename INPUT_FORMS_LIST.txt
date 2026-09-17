@@ -1,0 +1,35 @@
+📝 ALL INPUT FORMS & PLACEHOLDERS IN THE APPLICATION:
+
+=== 1. LOGIN PAGE (/login) ===
+✅ Email input: placeholder="Email address" 
+✅ Password input: placeholder="Password"
+
+=== 2. REGISTER PAGE (/register) ===
+✅ Email input: placeholder="Email address"
+✅ Password input: placeholder="Password (min 6 characters)" 
+✅ Confirm password input: placeholder="Confirm password"
+
+=== 3. SEARCH FORM (Dashboard) ===
+✅ Keywords input: placeholder="e.g., React Developer, Cybersecurity, Data Analyst"
+
+=== 4. CONFIG PAGE (/config) ===
+✅ Keywords input: placeholder="e.g., React Developer, Cybersecurity, Data Analyst"
+✅ Base time input: type="time" (no placeholder needed)
+✅ Interval time input: type="time" (no placeholder needed)
+
+=== PLACEHOLDER COLOR FIX APPLIED: ===
+🎨 Global CSS Override: Pure black (#000000) with !important
+🎨 Cross-browser support: webkit, moz, ms prefixes
+🎨 Tailwind override: Removes conflicting classes
+🎨 All individual placeholder classes removed
+
+=== EXPECTED RESULT: ===
+✅ All placeholder text should now appear in BLACK color
+✅ No more white/invisible placeholders
+✅ Works across all browsers (Chrome, Firefox, Safari, Edge)
+✅ Overrides any Tailwind conflicts
+
+If placeholders are still white after this change, it may be:
+1. Browser cache - Hard refresh (Ctrl+F5)
+2. Tailwind CSS order - The global CSS loads after Tailwind
+3. Inline styles overriding - Check for style="" attributes

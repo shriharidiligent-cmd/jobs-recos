@@ -1,0 +1,19 @@
+IMPORTANT: DATABASE COLUMNS MISSING
+
+The scheduler is failing because the new columns don't exist in your database yet.
+
+Please run these SQL commands in your Supabase SQL editor:
+
+1. Open Supabase dashboard
+2. Go to SQL Editor
+3. Run this query:
+
+ALTER TABLE users ADD COLUMN IF NOT EXISTS base_time TEXT DEFAULT NULL;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS use_custom_schedule BOOLEAN DEFAULT FALSE;
+
+Or you can run the full schema file: supabase-schema.sql
+
+After running this, the scheduler should work properly.
+
+PLACEHOLDER FIX:
+All input placeholders should now be visible with dark gray text instead of light/white text.

@@ -1,0 +1,78 @@
+DATABASE SCHEMA CHANGELOG
+=========================
+
+This file tracks all database schema changes chronologically.
+Always update this file when modifying the database structure.
+
+## Version 2.0 - December 2024 (Current)
+### Changes Made:
+- ✅ Updated `users.credits` from `INTEGER` to `NUMERIC(10, 4)` to support decimal credits
+- ✅ Added comprehensive documentation to `supabase-schema.sql`
+- ✅ Added schema version tracking and migration safety checks
+- ✅ Improved indexing documentation
+
+### Migration Required:
+```sql
+ALTER TABLE users ALTER COLUMN credits TYPE NUMERIC(10, 4);
+```
+
+### Impact:
+- Enables per-job pricing (0.0667 credits per job)
+- Supports decimal credit calculations
+- Backward compatible with existing integer credits
+
+---
+
+## Version 1.1 - Previous Updates
+### Changes Made:
+- ✅ Added `users.base_time` column for custom scan scheduling
+- ✅ Added `users.use_custom_schedule` column for schedule preferences
+- ✅ Created `scan_results` table for automatic scan storage
+- ✅ Added indexes for performance optimization
+
+### Columns Added:
+- `users.base_time TEXT DEFAULT NULL`
+- `users.use_custom_schedule BOOLEAN DEFAULT FALSE`
+
+### Tables Added:
+- `scan_results` table with full job data storage
+
+---
+
+## Version 1.0 - Initial Schema
+### Tables Created:
+- `users` table with basic authentication and credits
+- Initial indexes for email lookups
+
+### Initial Structure:
+- `users.credits INTEGER DEFAULT 100` (later changed to NUMERIC)
+- Basic user authentication fields
+- Simple credit system
+
+---
+
+## FUTURE CHANGES PROCESS:
+
+When making database changes:
+
+1. **Update `supabase-schema.sql`** with the complete current schema
+2. **Update this changelog** with:
+   - Version number (increment by 0.1 for minor, 1.0 for major)
+   - Date of change
+   - Detailed description of changes
+   - Migration commands required
+   - Impact assessment
+3. **Test migration** on development database first
+4. **Create migration file** if needed for production
+5. **Update documentation** in related files
+
+## MIGRATION SAFETY RULES:
+
+- Always use `IF NOT EXISTS` for new tables
+- Always use `ADD COLUMN IF NOT EXISTS` for new columns
+- Always include migration logic for existing databases
+- Always test backward compatibility
+- Never drop columns without careful consideration
+- Always create indexes with `IF NOT EXISTS`
+
+## CURRENT SCHEMA VERSION: 2.0

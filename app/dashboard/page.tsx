@@ -203,6 +203,12 @@ export default function DashboardPage() {
             <h1 className="text-2xl font-bold text-gray-900">Job Search Portal</h1>
             <div className="flex items-center space-x-4">
               <Link
+                href="/scan-results"
+                className="text-sm text-gray-600 hover:text-gray-900"
+              >
+                Auto Scans
+              </Link>
+              <Link
                 href="/config"
                 className="text-sm text-gray-600 hover:text-gray-900"
               >

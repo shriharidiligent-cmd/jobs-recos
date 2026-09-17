@@ -2,8 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { verifyToken, getUserById, updateUserCredits } from '@/lib/auth';
 import { scrapeJobs } from '@/lib/apify';
 
-const CREDITS_PER_SEARCH = parseInt(process.env.CREDITS_PER_SEARCH || '5');
-const RUPEES_PER_CREDIT = parseInt(process.env.RUPEES_PER_CREDIT || '2');
+const CREDITS_PER_JOB = parseFloat(process.env.CREDITS_PER_JOB || '0.0667');
 
 export async function POST(request: NextRequest) {
   try {
@@ -46,25 +45,45 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check credits
-    if (user.credits < CREDITS_PER_SEARCH) {
+    // Scrape jobs first to know how many we got
+    const jobs = await scrapeJobs(keywords, linkedinCount, naukriCount, sources, datePosted);
+    
+    // Calculate credits needed based on jobs delivered
+    const creditsNeeded = jobs.length * CREDITS_PER_JOB;
+    
+    console.log(`🔍 Search by user ${user.email}: Found ${jobs.length} jobs, need ${creditsNeeded.toFixed(4)} credits, user has ${user.credits} credits`);
+    
+    // Check if user has enough credits for the jobs we found
+    if (user.credits < creditsNeeded) {
       return NextResponse.json(
-        { error: 'Insufficient credits' },
+        { 
+          error: `Insufficient credits. Need ${creditsNeeded.toFixed(4)} credits for ${jobs.length} jobs, but you have ${user.credits} credits.`,
+          jobsFound: jobs.length,
+          creditsNeeded: creditsNeeded,
+          creditsAvailable: user.credits
+        },
         { status: 402 }
       );
     }
 
-    // Scrape jobs
-    const jobs = await scrapeJobs(keywords, linkedinCount, naukriCount, sources, datePosted);
-
-    // Deduct credits
-    await updateUserCredits(user.id, user.credits - CREDITS_PER_SEARCH);
+    // Deduct credits based on jobs delivered
+    const remainingCredits = user.credits - creditsNeeded;
+    console.log(`💳 Deducting ${creditsNeeded.toFixed(4)} credits from user ${user.email}. New balance: ${remainingCredits.toFixed(4)}`);
+    
+    // Update credits in database
+    await updateUserCredits(user.id, remainingCredits);
+    
+    // Verify the update worked by fetching the user again
+    const updatedUser = await getUserById(user.id);
+    console.log(`✅ Verification - User ${user.email} credits after update: ${updatedUser?.credits}`);
 
     return NextResponse.json({
       jobs,
-      creditsUsed: CREDITS_PER_SEARCH,
-      costInRupees: CREDITS_PER_SEARCH * RUPEES_PER_CREDIT,
-      remainingCredits: user.credits - CREDITS_PER_SEARCH,
+      jobsDelivered: jobs.length,
+      creditsPerJob: CREDITS_PER_JOB,
+      creditsUsed: creditsNeeded,
+      remainingCredits: remainingCredits,
+      verifiedCredits: updatedUser?.credits, // Add this for debugging
     });
   } catch (error) {
     console.error('Search error:', error);

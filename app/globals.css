@@ -24,3 +24,65 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Global placeholder styling - make all placeholders dark/black for visibility */
+input::placeholder,
+textarea::placeholder,
+select::placeholder {
+  color: #000000 !important; /* Pure black for maximum visibility */
+  opacity: 1 !important;
+}
+
+input::-webkit-input-placeholder,
+textarea::-webkit-input-placeholder,
+select::-webkit-input-placeholder {
+  color: #000000 !important; /* Pure black */
+  opacity: 1 !important;
+}
+
+input::-moz-placeholder,
+textarea::-moz-placeholder,
+select::-moz-placeholder {
+  color: #000000 !important; /* Pure black */
+  opacity: 1 !important;
+}
+
+input:-ms-input-placeholder,
+textarea:-ms-input-placeholder,
+select:-ms-input-placeholder {
+  color: #000000 !important; /* Pure black */
+  opacity: 1 !important;
+}
+
+input:-moz-placeholder,
+textarea:-moz-placeholder,
+select:-moz-placeholder {
+  color: #000000 !important; /* Pure black */
+  opacity: 1 !important;
+}
+
+/* Override Tailwind placeholder classes */
+input[class*="placeholder"]::-webkit-input-placeholder {
+  color: #000000 !important;
+  opacity: 1 !important;
+}
+
+input[class*="placeholder"]::-moz-placeholder {
+  color: #000000 !important;
+  opacity: 1 !important;
+}
+
+input[class*="placeholder"]:-ms-input-placeholder {
+  color: #000000 !important;
+  opacity: 1 !important;
+}
+
+input[class*="placeholder"]:-moz-placeholder {
+  color: #000000 !important;
+  opacity: 1 !important;
+}
+
+input[class*="placeholder"]::placeholder {
+  color: #000000 !important;
+  opacity: 1 !important;
+}

@@ -4,6 +4,78 @@ const client = new ApifyClient({
   token: process.env.APIFY_TOKEN!,
 });
 
+// Helper function to check if a job posting is within the specified date range
+function isWithinDateRange(item: any, dateFilter: string): boolean {
+  const now = new Date();
+  
+  // Try different date fields from Naukri
+  const postedAt = item.postedAt;
+  const postedDaysAgo = item.postedDaysAgo;
+  const createdDate = item.createdDate;
+  
+  // Method 1: Check postedDaysAgo if available
+  if (typeof postedDaysAgo === 'number') {
+    const daysAgo = postedDaysAgo;
+    const maxDays = dateFilter === '24h' ? 1 : dateFilter === 'week' ? 7 : 30;
+    return daysAgo <= maxDays;
+  }
+  
+  // Method 2: Parse postedAt text (e.g., "5 Days Ago", "2 weeks ago")
+  if (typeof postedAt === 'string') {
+    const lowerPosted = postedAt.toLowerCase();
+    
+    if (lowerPosted.includes('hour') || lowerPosted.includes('min')) {
+      return true; // Recent posts pass all filters
+    }
+    
+    if (lowerPosted.includes('day')) {
+      const daysMatch = lowerPosted.match(/(\d+)\s*day/);
+      if (daysMatch) {
+        const days = parseInt(daysMatch[1]);
+        const maxDays = dateFilter === '24h' ? 1 : dateFilter === 'week' ? 7 : 30;
+        return days <= maxDays;
+      }
+    }
+    
+    if (lowerPosted.includes('week')) {
+      const weeksMatch = lowerPosted.match(/(\d+)\s*week/);
+      if (weeksMatch) {
+        const weeks = parseInt(weeksMatch[1]);
+        return dateFilter === 'week' ? weeks <= 1 : dateFilter === 'month' ? weeks <= 4 : false;
+      }
+    }
+    
+    if (lowerPosted.includes('month')) {
+      return dateFilter === 'month';
+    }
+  }
+  
+  // Method 3: Use createdDate timestamp if available
+  if (createdDate) {
+    const jobDate = new Date(createdDate);
+    let cutoffDate = new Date();
+    
+    switch (dateFilter) {
+      case '24h':
+        cutoffDate.setHours(now.getHours() - 24);
+        break;
+      case 'week':
+        cutoffDate.setDate(now.getDate() - 7);
+        break;
+      case 'month':
+        cutoffDate.setMonth(now.getMonth() - 1);
+        break;
+      default:
+        return true;
+    }
+    
+    return jobDate >= cutoffDate;
+  }
+  
+  // Default: allow if we can't determine the date (conservative approach)
+  return true;
+}
+
 export interface JobResult {
   id: string;
   title: string;
@@ -59,9 +131,12 @@ export async function scrapeLinkedIn(
   datePosted?: string
 ): Promise<JobResult[]> {
   try {
+    // Add mandatory "@" symbol to LinkedIn keywords to filter casual posts
+    const enhancedKeywords = `${keywords} @`;
+    
     const input: any = {
       mode: 'search',
-      searchKeywords: [keywords], // Array format
+      searchKeywords: [enhancedKeywords], // Array format with @ symbol
       maxResults: maxResults,
     };
 
@@ -70,7 +145,7 @@ export async function scrapeLinkedIn(
       input.datePosted = datePosted;
     }
 
-    console.log('LinkedIn input parameters:', JSON.stringify(input, null, 2));
+    console.log('LinkedIn input parameters (with @ filter):', JSON.stringify(input, null, 2));
 
     const run = await client.actor(process.env.LINKEDIN_ACTOR_ID!).call(input);
 
@@ -210,18 +285,26 @@ export async function scrapeNaukri(
     
     console.log(`Naukri returned ${items.length} items before filtering`);
     if (items.length > 0) {
-      console.log('Naukri sample item (full):', JSON.stringify(items[0], null, 2));
-      console.log('Posted date fields check:');
-      console.log('- postedDateRelative:', items[0].postedDateRelative);
-      console.log('- postedDaysAgo:', items[0].postedDaysAgo);
-      console.log('- postedAt:', items[0].postedAt);
-      console.log('- createdDate:', items[0].createdDate);
+      console.log('Naukri sample item posted info:', {
+        postedAt: items[0].postedAt,
+        postedDateRelative: items[0].postedDateRelative,
+        postedDaysAgo: items[0].postedDaysAgo
+      });
     }
 
-    // Enforce exact result count
-    const limitedItems = items.slice(0, maxResults);
+    // Client-side date filtering since Naukri actor doesn't have proper date filters
+    let filteredItems = items;
+    if (datePosted && datePosted !== 'any') {
+      filteredItems = items.filter((item: any) => {
+        return isWithinDateRange(item, datePosted);
+      });
+      console.log(`Naukri filtered to ${filteredItems.length} items within ${datePosted} range`);
+    }
+
+    // Enforce exact result count from filtered results
+    const limitedItems = filteredItems.slice(0, maxResults);
     
-    console.log(`Returning ${limitedItems.length} Naukri results (requested: ${maxResults})`);
+    console.log(`Returning ${limitedItems.length} Naukri results (requested: ${maxResults}, after filtering)`);
 
     return limitedItems.map((item: any) => ({
       id: item.jobId || item.id || `naukri-${Date.now()}-${Math.random()}`,

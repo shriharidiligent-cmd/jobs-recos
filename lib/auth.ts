@@ -7,9 +7,11 @@ const JWT_SECRET = process.env.JWT_SECRET || 'change-this-secret';
 export interface User {
   id: string;
   email: string;
-  credits: number;
+  credits: number; // Now supports decimal values (NUMERIC in DB)
   keywords: string[];
   scanInterval: number; // in hours
+  baseTime?: string; // HH:MM format
+  useCustomSchedule?: boolean;
   lastScanAt?: string;
   createdAt: string;
 }
@@ -52,6 +54,8 @@ export async function createUser(
       credits: parseInt(process.env.DEFAULT_CREDITS || '100'),
       keywords: [],
       scan_interval: parseInt(process.env.DEFAULT_SCAN_INTERVAL || '2'),
+      base_time: null,
+      use_custom_schedule: false,
       created_at: new Date().toISOString(),
     })
     .select()
@@ -85,6 +89,8 @@ export async function getUserByEmail(email: string): Promise<User | null> {
     credits: data.credits,
     keywords: data.keywords || [],
     scanInterval: data.scan_interval,
+    baseTime: data.base_time,
+    useCustomSchedule: data.use_custom_schedule || false,
     lastScanAt: data.last_scan_at,
     createdAt: data.created_at,
   };
@@ -105,6 +111,8 @@ export async function getUserById(id: string): Promise<User | null> {
     credits: data.credits,
     keywords: data.keywords || [],
     scanInterval: data.scan_interval,
+    baseTime: data.base_time,
+    useCustomSchedule: data.use_custom_schedule || false,
     lastScanAt: data.last_scan_at,
     createdAt: data.created_at,
   };
@@ -114,20 +122,44 @@ export async function updateUserCredits(
   userId: string,
   credits: number
 ): Promise<void> {
-  await supabaseAdmin
+  console.log(`📊 Updating user ${userId} credits to ${credits}`);
+  
+  const { error } = await supabaseAdmin
     .from('users')
     .update({ credits })
     .eq('id', userId);
+
+  if (error) {
+    console.error('❌ Failed to update user credits:', error);
+    throw new Error(`Failed to update credits: ${error.message}`);
+  }
+
+  console.log(`✅ Successfully updated user ${userId} credits to ${credits}`);
 }
 
 export async function updateUserConfig(
   userId: string,
   keywords: string[],
-  scanInterval: number
+  scanInterval: number,
+  baseTime?: string | null,
+  useCustomSchedule?: boolean
 ): Promise<void> {
+  const updateData: any = { 
+    keywords, 
+    scan_interval: scanInterval 
+  };
+  
+  if (baseTime !== undefined) {
+    updateData.base_time = baseTime;
+  }
+  
+  if (useCustomSchedule !== undefined) {
+    updateData.use_custom_schedule = useCustomSchedule;
+  }
+
   await supabaseAdmin
     .from('users')
-    .update({ keywords, scan_interval: scanInterval })
+    .update(updateData)
     .eq('id', userId);
 }
 

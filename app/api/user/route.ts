@@ -27,6 +27,8 @@ export async function GET(request: NextRequest) {
         credits: user.credits,
         keywords: user.keywords,
         scanInterval: user.scanInterval,
+        baseTime: user.baseTime,
+        useCustomSchedule: user.useCustomSchedule,
         lastScanAt: user.lastScanAt,
       },
     });
