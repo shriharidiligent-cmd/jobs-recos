@@ -320,8 +320,6 @@ export function startScheduler() {
       const task = cron.schedule(cronExpression, () => {
         console.log(`⏰ Triggered default scheduled scan at ${time}`);
         runDefaultScheduledScans(time);
-      }, {
-        scheduled: true
       });
       
       // Store task for cleanup
@@ -342,8 +340,6 @@ export function startScheduler() {
       
       // This only processes custom users and only logs when there are custom scans
       runCustomScheduledScans(currentTime);
-    }, {
-      scheduled: true
     });
     
     console.log('✅ Custom user scheduler configured (every minute)');
