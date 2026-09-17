@@ -10,10 +10,35 @@ interface NextScanPopupProps {
 
 export default function NextScanPopup({ lastScanAt, scanInterval, onClose }: NextScanPopupProps) {
   const [nextScanTime, setNextScanTime] = useState<string>('');
-  
-  const scanTimes = ['08:00', '12:00', '16:00', '20:00'];
+  const [scanTimes, setScanTimes] = useState<string[]>(['08:00', '12:00', '16:00', '20:00']);
+  const [loading, setLoading] = useState(true);
 
+  // Fetch scan times from environment configuration
   useEffect(() => {
+    const fetchScanTimes = async () => {
+      try {
+        const response = await fetch('/api/config', { method: 'GET' });
+        if (response.ok) {
+          const config = await response.json();
+          if (config.scanTimes && config.scanTimes.length > 0) {
+            setScanTimes(config.scanTimes);
+          }
+        }
+      } catch (error) {
+        console.error('Failed to fetch scan times:', error);
+        // Keep default times if fetch fails
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchScanTimes();
+  }, []);
+
+  // Calculate next scan time whenever scan times change
+  useEffect(() => {
+    if (scanTimes.length === 0) return;
+
     const now = new Date();
     const currentHour = now.getHours();
     const currentMinute = now.getMinutes();
@@ -28,9 +53,20 @@ export default function NextScanPopup({ lastScanAt, scanInterval, onClose }: Nex
       }
     }
     
-    // If no scan time today, next is tomorrow at 8 AM
-    setNextScanTime('08:00 (tomorrow)');
-  }, []);
+    // If no scan time today, next is tomorrow at first scan time
+    const firstScanTime = scanTimes[0] || '08:00';
+    setNextScanTime(`${firstScanTime} (tomorrow)`);
+  }, [scanTimes]);
+
+  // Format scan times for display (HH:MM to H:MM AM/PM)
+  const formatTimeForDisplay = (time: string): string => {
+    const [hours, minutes] = time.split(':').map(Number);
+    const period = hours >= 12 ? 'PM' : 'AM';
+    const displayHours = hours > 12 ? hours - 12 : hours === 0 ? 12 : hours;
+    return `${displayHours}:${minutes.toString().padStart(2, '0')} ${period}`;
+  };
+
+  const formattedScanTimes = scanTimes.map(formatTimeForDisplay).join(' | ');
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -58,13 +94,13 @@ export default function NextScanPopup({ lastScanAt, scanInterval, onClose }: Nex
             Your saved keywords will be scanned automatically at:
           </p>
           <div className="text-sm font-semibold text-blue-600 mb-4">
-            8:00 AM | 12:00 PM | 4:00 PM | 8:00 PM
+            {loading ? 'Loading...' : formattedScanTimes}
           </div>
           <p className="text-gray-600 mb-2">
             Next scan at:
           </p>
           <p className="text-2xl font-bold text-blue-600 mb-4">
-            {nextScanTime}
+            {loading ? 'Loading...' : (nextScanTime ? formatTimeForDisplay(nextScanTime.replace(' (tomorrow)', '')) + (nextScanTime.includes('tomorrow') ? ' (tomorrow)' : '') : 'Calculating...')}
           </p>
           <p className="text-xs text-gray-500 mb-6">
             Make sure you have configured your keywords in Settings
