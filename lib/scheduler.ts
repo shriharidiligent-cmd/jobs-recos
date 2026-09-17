@@ -317,7 +317,8 @@ export function startScheduler() {
     const cronExpression = `${minutes} ${hours} * * *`;
     
     try {
-      const task = cron.schedule(cronExpression, () => {
+      // Create cron task without any options
+      const task = cron.schedule(cronExpression, function() {
         console.log(`⏰ Triggered default scheduled scan at ${time}`);
         runDefaultScheduledScans(time);
       });
@@ -334,7 +335,8 @@ export function startScheduler() {
   // For custom users: Schedule every minute ONLY to check their individual schedules
   // This runs silently - only processes custom users who need scanning at exact time
   try {
-    customCronTask = cron.schedule('* * * * *', () => {
+    // Create custom cron task without any options
+    customCronTask = cron.schedule('* * * * *', function() {
       const now = new Date();
       const currentTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
       
