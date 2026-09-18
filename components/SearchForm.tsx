@@ -126,10 +126,9 @@ export default function SearchForm({ onSearch, loading }: SearchFormProps) {
             onChange={(e) => setDatePosted(e.target.value)}
             className="w-full text-gray-800 px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           >
-            <option value="">Any Time</option>
+     
             <option value="24h">Past 24 Hours</option>
-            <option value="week">Past Week</option>
-            <option value="month">Past Month</option>
+
           </select>
         </div>
 
