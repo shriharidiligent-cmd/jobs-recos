@@ -279,19 +279,20 @@ export async function scrapeNaukri(
 ): Promise<JobResult[]> {
   try {
     const input: any = {
-      keyword: keywords,  // Use 'keyword' (singular) as per actor docs
-      maxJobs: maxResults, // Use 'maxJobs' instead of 'maxResults'
+      keyword: keywords,
+      maxResultsPerQuery: maxResults,
     };
 
-    // Add date filter using freshness parameter (expects days as string)
+    // Server-side date filter using jobAge (accepted values: "1", "3", "7", "15", "30")
     if (datePosted && datePosted !== 'any') {
-      const freshnessMap: Record<string, string> = {
+      const jobAgeMap: Record<string, string> = {
         '24h': '1',
         'week': '7',
         'month': '30',
       };
-      input.freshness = freshnessMap[datePosted] || '1';
-      console.log(`Naukri freshness filter: ${input.freshness} day(s) for datePosted: ${datePosted}`);
+      input.jobAge = jobAgeMap[datePosted] || '1';
+      input.sort = 'date';
+      console.log(`Naukri jobAge filter: ${input.jobAge} day(s), sort by date`);
     }
 
     console.log(`Naukri input parameters:`, JSON.stringify(input, null, 2));
