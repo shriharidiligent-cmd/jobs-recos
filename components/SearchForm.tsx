@@ -22,7 +22,7 @@ export default function SearchForm({ onSearch, loading }: SearchFormProps) {
   const [linkedinCount, setLinkedinCount] = useState(defaultLinkedin);
   const [naukriCount, setNaukriCount] = useState(defaultNaukri);
   const [sources, setSources] = useState<string[]>(['linkedin', 'naukri']);
-  const [datePosted, setDatePosted] = useState('');
+  const [datePosted, setDatePosted] = useState('24h');
 
   const handleSourceChange = (source: string) => {
     if (sources.includes(source)) {

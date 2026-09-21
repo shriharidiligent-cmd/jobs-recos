@@ -4,76 +4,73 @@ const client = new ApifyClient({
   token: process.env.APIFY_TOKEN!,
 });
 
+// Map UI datePosted values to max allowed days for filtering
+// '24h' → 0 means only hours/minutes/today pass; "1 Day Ago" is rejected
+function getMaxDays(dateFilter: string): number {
+  switch (dateFilter) {
+    case '24h': return 0;
+    case 'week': return 7;
+    case 'month': return 30;
+    default: return Infinity;
+  }
+}
+
 // Helper function to check if a job posting is within the specified date range
 function isWithinDateRange(item: any, dateFilter: string): boolean {
-  const now = new Date();
-  
-  // Try different date fields from Naukri
-  const postedAt = item.postedAt;
+  const maxDays = getMaxDays(dateFilter);
+  if (maxDays === Infinity) return true;
+
+  // Try different date fields
   const postedDaysAgo = item.postedDaysAgo;
+  const postedAt = item.postedAt;
+  const postedDateRelative = item.postedDateRelative;
   const createdDate = item.createdDate;
-  
+
   // Method 1: Check postedDaysAgo if available
   if (typeof postedDaysAgo === 'number') {
-    const daysAgo = postedDaysAgo;
-    const maxDays = dateFilter === '24h' ? 1 : dateFilter === 'week' ? 7 : 30;
-    return daysAgo <= maxDays;
+    return postedDaysAgo <= maxDays;
   }
-  
-  // Method 2: Parse postedAt text (e.g., "5 Days Ago", "2 weeks ago")
-  if (typeof postedAt === 'string') {
-    const lowerPosted = postedAt.toLowerCase();
-    
-    if (lowerPosted.includes('hour') || lowerPosted.includes('min')) {
-      return true; // Recent posts pass all filters
+
+  // Method 2: Parse relative date strings ("5 Days Ago", "3 days ago", "2 weeks ago")
+  const relativeText = (typeof postedDateRelative === 'string' ? postedDateRelative : '') ||
+                       (typeof postedAt === 'string' ? postedAt : '');
+  if (relativeText) {
+    const lower = relativeText.toLowerCase();
+
+    if (lower.includes('hour') || lower.includes('min') || lower.includes('just now') || lower.includes('today')) {
+      return true;
     }
-    
-    if (lowerPosted.includes('day')) {
-      const daysMatch = lowerPosted.match(/(\d+)\s*day/);
-      if (daysMatch) {
-        const days = parseInt(daysMatch[1]);
-        const maxDays = dateFilter === '24h' ? 1 : dateFilter === 'week' ? 7 : 30;
-        return days <= maxDays;
-      }
+
+    if (lower.includes('day')) {
+      const daysMatch = lower.match(/(\d+)\s*day/);
+      if (daysMatch) return parseInt(daysMatch[1]) <= maxDays;
+      // "a day ago" or "1 day ago"
+      return 1 <= maxDays;
     }
-    
-    if (lowerPosted.includes('week')) {
-      const weeksMatch = lowerPosted.match(/(\d+)\s*week/);
-      if (weeksMatch) {
-        const weeks = parseInt(weeksMatch[1]);
-        return dateFilter === 'week' ? weeks <= 1 : dateFilter === 'month' ? weeks <= 4 : false;
-      }
+
+    if (lower.includes('week')) {
+      const weeksMatch = lower.match(/(\d+)\s*week/);
+      if (weeksMatch) return parseInt(weeksMatch[1]) * 7 <= maxDays;
+      return 7 <= maxDays;
     }
-    
-    if (lowerPosted.includes('month')) {
-      return dateFilter === 'month';
+
+    if (lower.includes('month')) {
+      const monthsMatch = lower.match(/(\d+)\s*month/);
+      if (monthsMatch) return parseInt(monthsMatch[1]) * 30 <= maxDays;
+      return 30 <= maxDays;
     }
   }
-  
+
   // Method 3: Use createdDate timestamp if available
   if (createdDate) {
     const jobDate = new Date(createdDate);
-    let cutoffDate = new Date();
-    
-    switch (dateFilter) {
-      case '24h':
-        cutoffDate.setHours(now.getHours() - 24);
-        break;
-      case 'week':
-        cutoffDate.setDate(now.getDate() - 7);
-        break;
-      case 'month':
-        cutoffDate.setMonth(now.getMonth() - 1);
-        break;
-      default:
-        return true;
-    }
-    
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - maxDays);
     return jobDate >= cutoffDate;
   }
-  
-  // Default: allow if we can't determine the date (conservative approach)
-  return true;
+
+  // Reject items with unknown dates when a filter is active
+  return false;
 }
 
 export interface JobResult {
@@ -140,9 +137,14 @@ export async function scrapeLinkedIn(
       maxResults: maxResults,
     };
 
-    // Add date filter if provided
-    if (datePosted) {
-      input.datePosted = datePosted;
+    // Map UI datePosted value to LinkedIn actor's expected format
+    if (datePosted && datePosted !== 'any') {
+      const linkedinDateMap: Record<string, string> = {
+        '24h': '24h',
+        'week': 'week',
+        'month': 'month',
+      };
+      input.datePosted = linkedinDateMap[datePosted] || datePosted;
     }
 
     console.log('LinkedIn input parameters (with @ filter):', JSON.stringify(input, null, 2));
@@ -175,8 +177,20 @@ export async function scrapeLinkedIn(
 
     console.log(`Filtered ${items.length - filteredItems.length} spam posts. Remaining: ${filteredItems.length}`);
 
+    // Client-side date filtering as safety net (actor may still return older posts)
+    let dateFilteredItems = filteredItems;
+    if (datePosted && datePosted !== 'any') {
+      dateFilteredItems = filteredItems.filter((item: any) => {
+        // LinkedIn returns postedAt.postedAgoText like "8 hours ago", "3 days ago"
+        const postedAgoText = item.postedAt?.postedAgoText || item.postedAt?.postedAgoShort || '';
+        const fakeItem = { postedDateRelative: postedAgoText, postedAt: postedAgoText, createdDate: item.scrapedAt };
+        return isWithinDateRange(fakeItem, datePosted);
+      });
+      console.log(`LinkedIn date filter: ${filteredItems.length} → ${dateFilteredItems.length} items within ${datePosted}`);
+    }
+
     // Enforce exact result count by slicing
-    const limitedItems = filteredItems.slice(0, maxResults);
+    const limitedItems = dateFilteredItems.slice(0, maxResults);
     
     console.log(`Returning ${limitedItems.length} LinkedIn results (requested: ${maxResults})`);
 
@@ -269,12 +283,15 @@ export async function scrapeNaukri(
       maxJobs: maxResults, // Use 'maxJobs' instead of 'maxResults'
     };
 
-    // Add date filter if provided - this actor uses sortBy instead of freshness
+    // Add date filter using freshness parameter (expects days as string)
     if (datePosted && datePosted !== 'any') {
-      // For this actor, we can only sort by date (freshest first)
-      // There's no direct date filter, so we sort by date and rely on fewer results
-      input.sortBy = 'date'; // Sort by freshest first
-      console.log(`Naukri sorting by date (freshest first) for datePosted: ${datePosted}`);
+      const freshnessMap: Record<string, string> = {
+        '24h': '1',
+        'week': '7',
+        'month': '30',
+      };
+      input.freshness = freshnessMap[datePosted] || '1';
+      console.log(`Naukri freshness filter: ${input.freshness} day(s) for datePosted: ${datePosted}`);
     }
 
     console.log(`Naukri input parameters:`, JSON.stringify(input, null, 2));

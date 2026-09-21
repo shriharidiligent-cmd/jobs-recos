@@ -60,12 +60,13 @@ async function performScheduledScan(user: ScheduledUser, currentTime: string) {
     // Combine keywords
     const keywords = user.keywords.join(' ');
 
-    // Scrape jobs from both sources
+    // Scrape jobs from both sources with 24h date filter
     const jobs = await scrapeJobs(
       keywords, 
       DEFAULT_LINKEDIN_COUNT, 
       DEFAULT_NAUKRI_COUNT,
-      ['linkedin', 'naukri']
+      ['linkedin', 'naukri'],
+      '24h'
     );
 
     console.log(`Found ${jobs.length} jobs for user ${user.email}`);
